@@ -4,12 +4,16 @@ import type { Env } from "./env";
 import { ProjectRoom, type ProjectRoomClient } from "./project-room";
 import {
   classifyDemoApiRequest,
+  createDemoLoginCsrfToken,
   demoBasicAuthorizationValid,
   demoCredentialsValid,
+  demoLoginCsrfCookie,
+  demoLoginCsrfValid,
   demoMutationOriginAllowed,
   demoSessionAuthorizationValid,
   demoSessionCookie,
   deriveDemoInternalOwnerSecret,
+  expiredDemoLoginCsrfCookie,
   PRAXIS_DEMO_LOGIN_PATH,
   PRAXIS_DEMO_PROJECT_ID,
   readDemoLoginCredentials,
@@ -34,7 +38,19 @@ const unauthorized = () => json(
   401,
 );
 
-const loginPage = (status = 200, showError = false) => new Response(`<!doctype html>
+const withStrictTransportSecurity = (response: Response): Response => {
+  const headers = new Headers(response.headers);
+  headers.set("strict-transport-security", "max-age=31536000");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+};
+
+const loginPage = (request: Request, status = 200, showError = false) => {
+  const csrfToken = createDemoLoginCsrfToken();
+  return new Response(`<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -62,6 +78,7 @@ const loginPage = (status = 200, showError = false) => new Response(`<!doctype h
     <p class="lede">Sign in to open the shared, durable production workspace.</p>
     ${showError ? '<p class="error" role="alert">Sign-in failed. Check the credentials and try again.</p>' : ""}
     <form method="post" action="${PRAXIS_DEMO_LOGIN_PATH}">
+      <input name="csrf_token" type="hidden" value="${csrfToken}">
       <label for="username">Username</label>
       <input id="username" name="username" type="text" autocomplete="username" maxlength="128" required autofocus>
       <label for="password">Password</label>
@@ -77,9 +94,11 @@ const loginPage = (status = 200, showError = false) => new Response(`<!doctype h
     "cache-control": "no-store",
     "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'",
     "referrer-policy": "no-referrer",
+    "set-cookie": demoLoginCsrfCookie(csrfToken),
     "x-content-type-options": "nosniff",
   },
-});
+  });
+};
 
 const forwardDemoAsset = (request: Request, env: DemoEnv): Promise<Response> => {
   const headers = new Headers(request.headers);
@@ -122,8 +141,7 @@ const forwardDemoApi = async (request: Request, env: DemoEnv, password: string):
   return coreWorker.fetch(coreRequest, coreEnv);
 };
 
-export default {
-  async fetch(request: Request, env: DemoEnv): Promise<Response> {
+const handleDemoHttpsRequest = async (request: Request, env: DemoEnv): Promise<Response> => {
     const username = env.PRAXIS_DEMO_USERNAME;
     const password = env.PRAXIS_DEMO_PASSWORD;
     if (!username || username.length > 128 || !password || password.length < 32 || password.length > 512) {
@@ -141,31 +159,30 @@ export default {
       if (request.method === "GET") {
         return authorized
           ? new Response(null, { status: 303, headers: { location: "/", "cache-control": "no-store" } })
-          : loginPage();
+          : loginPage(request);
       }
       if (request.method !== "POST") {
         return json({ code: "METHOD_NOT_ALLOWED", message: "The demo login accepts GET and POST" }, 405, { allow: "GET, POST" });
       }
-      if (!demoMutationOriginAllowed(request)) {
-        return json({ code: "DEMO_ORIGIN_DENIED", message: "Demo login requires the exact application origin" }, 403);
-      }
       const credentials = await readDemoLoginCredentials(request);
-      if (!credentials.ok) return loginPage(credentials.status, true);
-      if (!(await demoCredentialsValid(credentials.username, credentials.password, username, password))) {
-        return loginPage(401, true);
+      if (!credentials.ok) return loginPage(request, credentials.status, true);
+      if (!(await demoLoginCsrfValid(request, credentials.csrfToken))) {
+        return loginPage(request, 403, true);
       }
+      if (!(await demoCredentialsValid(credentials.username, credentials.password, username, password))) {
+        return loginPage(request, 401, true);
+      }
+      const headers = new Headers({ location: "/", "cache-control": "no-store" });
+      headers.append("set-cookie", await demoSessionCookie(username, password));
+      headers.append("set-cookie", expiredDemoLoginCsrfCookie());
       return new Response(null, {
         status: 303,
-        headers: {
-          location: "/",
-          "cache-control": "no-store",
-          "set-cookie": await demoSessionCookie(request, username, password),
-        },
+        headers,
       });
     }
 
     if (!authorized) {
-      if (request.method === "GET" && url.pathname === "/") return loginPage();
+      if (request.method === "GET" && url.pathname === "/") return loginPage(request);
       return unauthorized();
     }
 
@@ -202,5 +219,24 @@ export default {
       }));
       return json({ code: "DEMO_INTERNAL_ERROR", message: "The Praxis demo could not complete the request" }, 500);
     }
+};
+
+export default {
+  async fetch(request: Request, env: DemoEnv): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.protocol === "http:") {
+      if (request.method === "GET" || request.method === "HEAD") {
+        url.protocol = "https:";
+        return new Response(null, {
+          status: 308,
+          headers: { location: url.toString(), "cache-control": "no-store" },
+        });
+      }
+      return json({
+        code: "DEMO_HTTPS_REQUIRED",
+        message: "Praxis demo credentials and mutations require HTTPS",
+      }, 400);
+    }
+    return withStrictTransportSecurity(await handleDemoHttpsRequest(request, env));
   },
 } satisfies ExportedHandler<DemoEnv>;

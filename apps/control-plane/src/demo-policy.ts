@@ -1,5 +1,7 @@
 export const PRAXIS_DEMO_PROJECT_ID = "project_fax_oracle";
 export const PRAXIS_DEMO_LOGIN_PATH = "/login";
+export const PRAXIS_DEMO_LOGIN_CSRF_COOKIE = "praxis_demo_login_csrf";
+export const PRAXIS_DEMO_LOGIN_CSRF_MAX_AGE_SECONDS = 10 * 60;
 export const PRAXIS_DEMO_SESSION_COOKIE = "praxis_demo_session";
 export const PRAXIS_DEMO_SESSION_MAX_AGE_SECONDS = 4 * 60 * 60;
 export const PRAXIS_DEMO_LOGIN_MAX_BODY_BYTES = 2_048;
@@ -69,6 +71,39 @@ async function constantTimeTextEqual(left: string, right: string): Promise<boole
   return difference === 0;
 }
 
+function cookieValue(request: Request, name: string): string | undefined {
+  const header = request.headers.get("cookie");
+  if (!header || header.length > 4_096) return undefined;
+  let value: string | undefined;
+  for (const segment of header.split(";")) {
+    const separator = segment.indexOf("=");
+    if (separator < 0 || segment.slice(0, separator).trim() !== name) continue;
+    if (value !== undefined) return undefined;
+    value = segment.slice(separator + 1).trim();
+  }
+  return value;
+}
+
+export function createDemoLoginCsrfToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export function demoLoginCsrfCookie(token: string): string {
+  return `${PRAXIS_DEMO_LOGIN_CSRF_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${PRAXIS_DEMO_LOGIN_CSRF_MAX_AGE_SECONDS}; Secure`;
+}
+
+export function expiredDemoLoginCsrfCookie(): string {
+  return `${PRAXIS_DEMO_LOGIN_CSRF_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Secure`;
+}
+
+export async function demoLoginCsrfValid(request: Request, providedToken: string): Promise<boolean> {
+  const cookieToken = cookieValue(request, PRAXIS_DEMO_LOGIN_CSRF_COOKIE) ?? "";
+  const equal = await constantTimeTextEqual(providedToken, cookieToken);
+  return /^[a-f0-9]{64}$/u.test(providedToken) && /^[a-f0-9]{64}$/u.test(cookieToken) && equal;
+}
+
 export async function demoCredentialsValid(
   providedUsername: string,
   providedPassword: string,
@@ -117,42 +152,27 @@ export async function deriveDemoSessionValue(username: string, password: string)
   return [...derived].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function sessionCookieValue(request: Request): string | undefined {
-  const header = request.headers.get("cookie");
-  if (!header || header.length > 4_096) return undefined;
-  let value: string | undefined;
-  for (const segment of header.split(";")) {
-    const separator = segment.indexOf("=");
-    if (separator < 0 || segment.slice(0, separator).trim() !== PRAXIS_DEMO_SESSION_COOKIE) continue;
-    if (value !== undefined) return undefined;
-    value = segment.slice(separator + 1).trim();
-  }
-  return value;
-}
-
 export async function demoSessionAuthorizationValid(
   request: Request,
   expectedUsername: string,
   expectedPassword: string,
 ): Promise<boolean> {
   if (!configuredCredentialsValid(expectedUsername, expectedPassword)) return false;
-  const provided = sessionCookieValue(request);
+  const provided = cookieValue(request, PRAXIS_DEMO_SESSION_COOKIE);
   if (!provided || !/^[a-f0-9]{64}$/u.test(provided)) return false;
   return constantTimeTextEqual(provided, await deriveDemoSessionValue(expectedUsername, expectedPassword));
 }
 
 export async function demoSessionCookie(
-  request: Request,
   username: string,
   password: string,
 ): Promise<string> {
   const value = await deriveDemoSessionValue(username, password);
-  const secure = new URL(request.url).protocol === "https:" ? "; Secure" : "";
-  return `${PRAXIS_DEMO_SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${PRAXIS_DEMO_SESSION_MAX_AGE_SECONDS}${secure}`;
+  return `${PRAXIS_DEMO_SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${PRAXIS_DEMO_SESSION_MAX_AGE_SECONDS}; Secure`;
 }
 
 export type DemoLoginCredentialsResult =
-  | { ok: true; username: string; password: string }
+  | { ok: true; username: string; password: string; csrfToken: string }
   | { ok: false; status: 400 | 413 | 415 };
 
 export async function readDemoLoginCredentials(request: Request): Promise<DemoLoginCredentialsResult> {
@@ -195,10 +215,14 @@ export async function readDemoLoginCredentials(request: Request): Promise<DemoLo
   const form = new URLSearchParams(body);
   const usernames = form.getAll("username");
   const passwords = form.getAll("password");
-  if ([...form.keys()].some((key) => key !== "username" && key !== "password")) return { ok: false, status: 400 };
-  if (usernames.length !== 1 || passwords.length !== 1) return { ok: false, status: 400 };
+  const csrfTokens = form.getAll("csrf_token");
+  if ([...form.keys()].some((key) => key !== "username" && key !== "password" && key !== "csrf_token")) {
+    return { ok: false, status: 400 };
+  }
+  if (usernames.length !== 1 || passwords.length !== 1 || csrfTokens.length > 1) return { ok: false, status: 400 };
   const username = usernames[0]!;
   const password = passwords[0]!;
+  const csrfToken = csrfTokens[0] ?? "";
   if (!username || username.length > 128 || !password || password.length > 512) return { ok: false, status: 400 };
-  return { ok: true, username, password };
+  return { ok: true, username, password, csrfToken };
 }
