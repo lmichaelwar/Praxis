@@ -1,0 +1,27 @@
+{
+  "name": "@praxis/render-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --external:ffmpeg-static --external:ffprobe-static --outfile=dist/server.js",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "start": "node dist/server.js",
+    "dev": "tsx src/main.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@praxis/render-manifest": "0.1.0",
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.19.2"
+  }
+}

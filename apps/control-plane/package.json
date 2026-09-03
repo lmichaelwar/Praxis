@@ -1,0 +1,35 @@
+{
+  "name": "@praxis/control-plane",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev --config wrangler.jsonc --port 8787 --persist-to ../../.praxis-data/wrangler",
+    "build": "wrangler deploy --dry-run --env= --containers-rollout=none --config wrangler.jsonc --outdir ../../output/control-plane",
+    "build:with-container": "wrangler deploy --dry-run --env= --config wrangler.jsonc --outdir ../../output/control-plane-with-container",
+    "types": "wrangler types --config wrangler.jsonc src/worker-configuration.d.ts",
+    "test": "vitest run --config vitest.config.ts",
+    "check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.3.7",
+    "@praxis/agent-runs": "0.1.0",
+    "@praxis/commands": "0.1.0",
+    "@praxis/history": "0.1.0",
+    "@praxis/jobs": "0.1.0",
+    "@praxis/media": "0.1.0",
+    "@praxis/project-schema": "0.1.0",
+    "@praxis/qc": "0.1.0",
+    "@praxis/render-manifest": "0.1.0",
+    "aws4fetch": "^1.0.20",
+    "jose": "^6.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.126.0"
+  }
+}

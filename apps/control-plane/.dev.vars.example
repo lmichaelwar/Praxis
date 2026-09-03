@@ -1,0 +1,11 @@
+# Copy to .dev.vars for local Wrangler development. Never commit real values.
+PRAXIS_OWNER_TOKEN="replace-with-a-long-random-owner-token"
+PRAXIS_CAPABILITY_SIGNING_SECRET="replace-with-at-least-32-random-bytes"
+PRAXIS_RENDER_AUTH_SECRET="replace-with-at-least-32-random-characters"
+PRAXIS_RENDER_RESULT_SIGNING_SECRET="replace-with-a-distinct-32-character-secret"
+PRAXIS_RENDER_RESULT_SIGNING_KEY_ID="praxis-render-result-local-v1"
+PRAXIS_RENDER_RESULT_VERIFY_KEYS_JSON="{}"
+PRAXIS_BROWSER_SESSION_SIGNING_SECRET="replace-with-a-distinct-32-character-secret"
+PRAXIS_AGENT_CLAIM_SIGNING_SECRET="replace-with-a-distinct-32-character-secret"
+PRAXIS_DISPATCHER_TOKEN="replace-with-a-distinct-32-character-token"
+OPENAI_API_KEY=""

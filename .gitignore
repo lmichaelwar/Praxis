@@ -1,0 +1,48 @@
+# Dependencies and generated builds
+node_modules/
+dist/
+coverage/
+output/
+*.log
+
+# Local Cloudflare and Praxis state
+.wrangler/
+.praxis-data/
+.praxis/
+
+# Secrets and local configuration. Keep only sanitized examples public.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+.dev.vars
+.dev.vars.*
+**/.dev.vars
+**/.dev.vars.*
+!.dev.vars.example
+!**/.dev.vars.example
+.env*.disabled-*
+**/.env*.disabled-*
+.dev.vars*.disabled-*
+**/.dev.vars*.disabled-*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials/
+secrets/
+
+# Private working material and evidence
+/Praxis Architecture_init_plan.md
+/docs/private/
+/private/
+/output/
+
+# Local design references and editor files
+apps/studio/public/design-reference/
+.DS_Store
+.idea/
+.vscode/
+*.swp

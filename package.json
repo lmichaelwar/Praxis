@@ -1,0 +1,56 @@
+{
+  "name": "praxis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @praxis/studio",
+    "dev:full": "node scripts/dev-full.mjs",
+    "build": "npm run build --workspace @praxis/studio && npm run build --workspace @praxis/control-plane && npm run build --workspace @praxis/render-worker && npm run build --workspace @praxis/codex-cloud-dispatcher",
+    "build:studio": "npm run build --workspace @praxis/studio",
+    "build:control-plane": "npm run build --workspace @praxis/control-plane",
+    "build:render-worker": "npm run build --workspace @praxis/render-worker",
+    "build:dispatcher": "npm run build --workspace @praxis/codex-cloud-dispatcher",
+    "dev:dispatcher": "npm run dev --workspace @praxis/codex-cloud-dispatcher",
+    "test": "vitest run",
+    "test:control-plane": "npm run test --workspace @praxis/control-plane",
+    "test:all": "npm test && npm run test:control-plane",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "praxisctl": "npm run start --workspace @praxis/praxisctl",
+    "audit": "npm audit --audit-level=moderate"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/roboto-condensed": "^5.2.8",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.3",
+    "@types/react-dom": "^19.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^4.1.11"
+  },
+  "allowScripts": {
+    "ffmpeg-static@5.3.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.1": true,
+    "esbuild@0.28.2": true,
+    "workerd@1.20260815.1": true,
+    "workerd@1.20260825.1": true
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "praxis-control-plane-test",
+  "main": "test/worker.ts",
+  "compatibility_date": "2026-08-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "PRAXIS_AGENT_CLAIM_SIGNING_SECRET": "test-agent-claim-secret-with-at-least-thirty-two-characters",
+    "PRAXIS_AGENT_LEASE_SECONDS": "1800"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PROJECT_ROOMS",
+        "class_name": "ProjectRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ProjectRoom"]
+    }
+  ],
+  "assets": {
+    "directory": "../studio/public",
+    "binding": "ASSETS"
+  }
+}

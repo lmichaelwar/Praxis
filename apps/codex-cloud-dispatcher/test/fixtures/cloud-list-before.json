@@ -1,0 +1,16 @@
+{
+  "tasks": [
+    {
+      "id": "task_existing_alpha",
+      "title": "Earlier Praxis maintenance task",
+      "status": "ready",
+      "environment_id": "env_praxis_staging",
+      "environment_label": "Praxis staging",
+      "updated_at": "2026-08-26T12:00:00.000Z",
+      "url": "https://chatgpt.com/codex/tasks/task_existing_alpha",
+      "is_review": false,
+      "attempt_total": 1
+    }
+  ],
+  "cursor": "cursor_before_01"
+}

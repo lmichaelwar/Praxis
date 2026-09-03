@@ -1,0 +1,141 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "praxis-control-plane",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "dev": {
+    "ip": "127.0.0.1",
+    "port": 8787,
+    "enable_containers": false
+  },
+  "vars": {
+    "PRAXIS_PROVIDER_MODE": "fake",
+    "PRAXIS_IMAGE_MODEL": "gpt-image-2",
+    "PRAXIS_TTS_MODEL": "gpt-4o-mini-tts",
+    "PRAXIS_TTS_VOICE": "alloy",
+    "PRAXIS_ALLOWED_ORIGIN": "http://127.0.0.1:4173",
+    "PRAXIS_FAKE_IMAGE_URL": "http://127.0.0.1:4173/media/fax-oracle-corridor.png"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PROJECT_ROOMS",
+        "class_name": "ProjectRoom"
+      },
+      {
+        "name": "RENDER_CONTAINERS",
+        "class_name": "RenderContainer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ProjectRoom", "RenderContainer"]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "praxis-media",
+      "preview_bucket_name": "praxis-media-preview"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "praxis-media-workflow",
+      "binding": "MEDIA_WORKFLOW",
+      "class_name": "MediaWorkflow"
+    },
+    {
+      "name": "praxis-render-workflow",
+      "binding": "RENDER_WORKFLOW",
+      "class_name": "RenderWorkflow"
+    }
+  ],
+  "containers": [
+    {
+      "class_name": "RenderContainer",
+      "image": "../render-worker/Dockerfile",
+      "max_instances": 4,
+      "instance_type": "basic"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "env": {
+    "staging": {
+      "name": "praxis-control-plane-staging",
+      "workers_dev": false,
+      "preview_urls": false,
+      "vars": {
+        "PRAXIS_AUTH_MODE": "cloudflare_access",
+        "PRAXIS_PROVIDER_MODE": "openai",
+        "PRAXIS_IMAGE_MODEL": "gpt-image-2",
+        "PRAXIS_TTS_MODEL": "gpt-4o-mini-tts",
+        "PRAXIS_TTS_VOICE": "alloy",
+        "PRAXIS_BROWSER_SESSION_TTL_SECONDS": "28800",
+        "PRAXIS_AGENT_LEASE_SECONDS": "1800",
+        "PRAXIS_RECONCILE_INTERVAL_SECONDS": "30",
+        "PRAXIS_CANCEL_GRACE_SECONDS": "45",
+        "PRAXIS_RENDER_RESULT_SIGNING_KEY_ID": "praxis-render-result-staging-v1"
+      },
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "PROJECT_ROOMS",
+            "class_name": "ProjectRoom"
+          },
+          {
+            "name": "RENDER_CONTAINERS",
+            "class_name": "RenderContainer"
+          }
+        ]
+      },
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "praxis-media-staging"
+        }
+      ],
+      "workflows": [
+        {
+          "name": "praxis-media-workflow-staging",
+          "binding": "MEDIA_WORKFLOW",
+          "class_name": "MediaWorkflow"
+        },
+        {
+          "name": "praxis-render-workflow-staging",
+          "binding": "RENDER_WORKFLOW",
+          "class_name": "RenderWorkflow"
+        }
+      ],
+      "containers": [
+        {
+          "class_name": "RenderContainer",
+          "image": "../render-worker/Dockerfile",
+          "max_instances": 1,
+          "instance_type": "basic"
+        }
+      ],
+      "observability": {
+        "enabled": true,
+        "logs": {
+          "enabled": true,
+          "invocation_logs": true
+        },
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 1
+        }
+      }
+    }
+  }
+}

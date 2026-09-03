@@ -1,0 +1,17 @@
+{
+  "name": "@praxis/history",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@praxis/commands": "0.1.0",
+    "@praxis/project-schema": "0.1.0",
+    "zod": "^3.24.1"
+  }
+}

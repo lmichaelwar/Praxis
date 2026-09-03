@@ -1,0 +1,28 @@
+{
+  "tasks": [
+    {
+      "id": "task_new_unmarked_01",
+      "title": "Unrelated new cloud task one",
+      "status": "pending",
+      "environment_id": "env_praxis_staging",
+      "updated_at": "2026-08-26T12:01:00.000Z",
+      "url": "https://chatgpt.com/codex/tasks/task_new_unmarked_01"
+    },
+    {
+      "id": "task_new_unmarked_02",
+      "title": "Unrelated new cloud task two",
+      "status": "pending",
+      "environment_id": "env_praxis_staging",
+      "updated_at": "2026-08-26T12:01:01.000Z",
+      "url": "https://chatgpt.com/codex/tasks/task_new_unmarked_02"
+    },
+    {
+      "id": "task_existing_alpha",
+      "title": "Earlier Praxis maintenance task",
+      "status": "ready",
+      "environment_id": "env_praxis_staging",
+      "updated_at": "2026-08-26T12:00:00.000Z",
+      "url": "https://chatgpt.com/codex/tasks/task_existing_alpha"
+    }
+  ]
+}

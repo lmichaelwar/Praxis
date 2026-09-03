@@ -1,0 +1,28 @@
+{
+  "name": "@praxis/studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run src/usePraxisStudio.test.tsx",
+    "check": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/roboto-condensed": "^5.2.8",
+    "@praxis/agent-runs": "0.1.0",
+    "@praxis/commands": "0.1.0",
+    "@praxis/history": "0.1.0",
+    "@praxis/jobs": "0.1.0",
+    "@praxis/project-schema": "0.1.0",
+    "@praxis/qc": "0.1.0",
+    "@praxis/remote-client": "0.1.0",
+    "@praxis/webmcp": "0.1.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}
