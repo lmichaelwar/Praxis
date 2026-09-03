@@ -7,7 +7,7 @@ Praxis is a cooperative video-production studio where a person and a browser age
 - Live demo: <https://praxis-no-api-demo.hofwar.workers.dev>
 - Judge walkthrough: [docs/submission/testing-instructions.md](docs/submission/testing-instructions.md)
 
-The hosted demo is protected with a demo-only judge credential supplied privately in the Devpost testing instructions. No credential belongs in this repository.
+The hosted demo opens on a simple Praxis sign-in page. Judges enter the demo-only username and password supplied privately in Devpost; a successful sign-in creates a secure, HttpOnly session cookie and redirects into the Studio. HTTP Basic remains available for compatible automation. No credential belongs in this repository.
 
 ## What the demo shows
 

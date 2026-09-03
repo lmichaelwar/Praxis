@@ -6,15 +6,28 @@ import {
   demoBasicAuthorizationValid,
   demoMutationOriginAllowed,
   deriveDemoInternalOwnerSecret,
+  PRAXIS_DEMO_LOGIN_MAX_BODY_BYTES,
   PRAXIS_DEMO_PROJECT_ID,
+  PRAXIS_DEMO_SESSION_COOKIE,
 } from "../src/demo-policy";
 
 const accessSecret = "test-only-praxis-demo-access-secret-0001";
 const request = (path: string, init?: RequestInit) => new Request(`https://praxis.example${path}`, init);
 const authorization = `Basic ${btoa(`praxis:${accessSecret}`)}`;
+const loginRequest = (body: string, headers: HeadersInit = {}) => request("/login", {
+  method: "POST",
+  headers: {
+    origin: "https://praxis.example",
+    "content-type": "application/x-www-form-urlencoded",
+    ...headers,
+  },
+  body,
+});
+const validLoginBody = new URLSearchParams({ username: "praxis", password: accessSecret }).toString();
 
 const testEnv = env as Cloudflare.Env & { ASSETS: Fetcher };
 const handlerEnv = (overrides: Partial<DemoEnv> = {}) => ({
+  PROJECT_ROOMS: testEnv.PROJECT_ROOMS,
   PRAXIS_DEMO_USERNAME: "praxis",
   PRAXIS_DEMO_PASSWORD: accessSecret,
   ASSETS: {
@@ -79,15 +92,118 @@ describe("no-API demo policy", () => {
     expect(demoMutationOriginAllowed(request("/api/project", { method: "POST" }))).toBe(false);
   });
 
-  it("challenges before serving assets and fails closed when auth is unconfigured", async () => {
+  it("serves an accessible in-page login while keeping APIs and media protected", async () => {
     const unconfigured = await demoWorker.fetch(request("/"), handlerEnv({ PRAXIS_DEMO_PASSWORD: undefined }));
     expect(unconfigured.status).toBe(503);
-    const unauthorized = await demoWorker.fetch(request("/"), handlerEnv());
-    expect(unauthorized.status).toBe(401);
-    expect(unauthorized.headers.get("www-authenticate")).toContain("Basic");
+
+    const login = await demoWorker.fetch(request("/"), handlerEnv());
+    expect(login.status).toBe(200);
+    expect(login.headers.get("content-type")).toContain("text/html");
+    expect(login.headers.get("www-authenticate")).toBeNull();
+    const loginHtml = await login.text();
+    expect(loginHtml).toContain("Praxis production demo");
+    expect(loginHtml).toContain('<label for="username">Username</label>');
+    expect(loginHtml).toContain('<label for="password">Password</label>');
+    expect(loginHtml).not.toContain("<script");
+    expect(loginHtml).not.toContain(accessSecret);
+
+    const unauthorizedApi = await demoWorker.fetch(request(`/api/projects/${PRAXIS_DEMO_PROJECT_ID}`), handlerEnv());
+    expect(unauthorizedApi.status).toBe(401);
+    expect(unauthorizedApi.headers.get("www-authenticate")).toBeNull();
+    const unauthorizedMedia = await demoWorker.fetch(request("/media/fax-oracle-corridor.png"), handlerEnv());
+    expect(unauthorizedMedia.status).toBe(401);
+
     const asset = await demoWorker.fetch(request("/", { headers: { authorization } }), handlerEnv());
     expect(asset.status).toBe(200);
     await expect(asset.text()).resolves.toBe("studio asset");
+  });
+
+  it("keeps invalid form credentials fail-closed without echoing them", async () => {
+    const attemptedPassword = "incorrect-password-value-that-is-long-enough";
+    const response = await demoWorker.fetch(loginRequest(new URLSearchParams({
+      username: "praxis",
+      password: attemptedPassword,
+    }).toString()), handlerEnv());
+    expect(response.status).toBe(401);
+    expect(response.headers.get("set-cookie")).toBeNull();
+    expect(response.headers.get("www-authenticate")).toBeNull();
+    const html = await response.text();
+    expect(html).toContain('role="alert"');
+    expect(html).not.toContain(attemptedPassword);
+    expect(html).not.toContain(accessSecret);
+  });
+
+  it("sets a derived secure HttpOnly cookie and accepts it for assets and APIs", async () => {
+    const login = await demoWorker.fetch(loginRequest(validLoginBody), handlerEnv());
+    expect(login.status).toBe(303);
+    expect(login.headers.get("location")).toBe("/");
+    const setCookie = login.headers.get("set-cookie") ?? "";
+    expect(setCookie).toMatch(new RegExp(`^${PRAXIS_DEMO_SESSION_COOKIE}=[a-f0-9]{64};`, "u"));
+    expect(setCookie).toContain("Path=/");
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("SameSite=Strict");
+    expect(setCookie).toContain("Max-Age=14400");
+    expect(setCookie).toContain("Secure");
+    expect(setCookie).not.toContain(accessSecret);
+    const cookie = setCookie.split(";", 1)[0]!;
+
+    const asset = await demoWorker.fetch(request("/", { headers: { cookie } }), handlerEnv());
+    expect(asset.status).toBe(200);
+    await expect(asset.text()).resolves.toBe("studio asset");
+    const project = await demoWorker.fetch(request(`/api/projects/${PRAXIS_DEMO_PROJECT_ID}`, {
+      headers: { cookie },
+    }), handlerEnv());
+    expect(project.status).toBe(200);
+  });
+
+  it("rejects malformed and oversized login bodies before credential validation", async () => {
+    const wrongMediaType = await demoWorker.fetch(request("/login", {
+      method: "POST",
+      headers: { origin: "https://praxis.example", "content-type": "application/json" },
+      body: JSON.stringify({ username: "praxis", password: accessSecret }),
+    }), handlerEnv());
+    expect(wrongMediaType.status).toBe(415);
+    expect(wrongMediaType.headers.get("set-cookie")).toBeNull();
+
+    const duplicate = await demoWorker.fetch(loginRequest(
+      `username=praxis&username=other&password=${encodeURIComponent(accessSecret)}`,
+    ), handlerEnv());
+    expect(duplicate.status).toBe(400);
+
+    const oversized = await demoWorker.fetch(loginRequest(
+      `username=praxis&password=${"x".repeat(PRAXIS_DEMO_LOGIN_MAX_BODY_BYTES)}`,
+    ), handlerEnv());
+    expect(oversized.status).toBe(413);
+    expect(oversized.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("rejects login CSRF and still requires exact Origin for cookie-authenticated mutations", async () => {
+    const missingOrigin = await demoWorker.fetch(loginRequest(validLoginBody, { origin: "" }), handlerEnv());
+    expect(missingOrigin.status).toBe(403);
+    expect(missingOrigin.headers.get("set-cookie")).toBeNull();
+    const crossOrigin = await demoWorker.fetch(loginRequest(validLoginBody, {
+      origin: "https://attacker.example",
+    }), handlerEnv());
+    expect(crossOrigin.status).toBe(403);
+    expect(crossOrigin.headers.get("set-cookie")).toBeNull();
+
+    const login = await demoWorker.fetch(loginRequest(validLoginBody), handlerEnv());
+    const cookie = (login.headers.get("set-cookie") ?? "").split(";", 1)[0]!;
+    const mutation = await demoWorker.fetch(request(`/api/projects/${PRAXIS_DEMO_PROJECT_ID}/commands`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json" },
+      body: "{}",
+    }), handlerEnv());
+    expect(mutation.status).toBe(403);
+    await expect(mutation.json()).resolves.toMatchObject({ code: "DEMO_ORIGIN_DENIED" });
+  });
+
+  it("fails closed on the login route when the demo secret is absent", async () => {
+    const response = await demoWorker.fetch(loginRequest(validLoginBody), handlerEnv({
+      PRAXIS_DEMO_PASSWORD: undefined,
+    }));
+    expect(response.status).toBe(503);
+    expect(response.headers.get("set-cookie")).toBeNull();
   });
 
   it("denies disabled APIs and cross-origin mutations before touching storage", async () => {

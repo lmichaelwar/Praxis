@@ -9,13 +9,13 @@
 - Username: `{{DEVPOST_USERNAME}}`
 - Password: `{{DEVPOST_PASSWORD}}`
 
-The browser may prompt for the demo credential once. The Studio, API, and media are protected by the same demo-only access boundary. No separate account creation or paid API key is required.
+Normal browser navigation opens a simple Praxis sign-in page. Enter the private Devpost credential there and submit the form. A successful sign-in sets a secure, HttpOnly session cookie and redirects to the Studio; then allow the project to hydrate. The Studio, API, and media are protected by the same demo-only access boundary. HTTP Basic remains available for compatible automation, but no separate account creation or paid API key is required.
 
 ## Clean test
 
 1. Open the live URL in a clean browser profile or incognito window.
-2. Enter the demo credential when prompted.
-3. Wait for the header to show a project revision, **Synced to control plane**, and **WebMCP · 6 bounded tools**.
+2. On the Praxis sign-in page, enter the username and password above and submit the form.
+3. Wait for the redirect and project hydration. The Studio header should then show a project revision, **Synced to control plane**, and **WebMCP · 6 bounded tools**.
 4. Choose **Reset demo** in the header. This returns the shared judge project to the deterministic Fax Oracle seed.
 5. Select the first unlocked scene in the left rail, then give the browser agent this prompt:
 
@@ -40,6 +40,7 @@ The browser may prompt for the demo credential once. The Studio, API, and media 
 
 ## Troubleshooting
 
+- If the sign-in page reports invalid credentials, re-enter the values exactly as supplied in Devpost. Do not put them in the URL or share them outside the private testing field.
 - If the page says **Hydrating project**, wait a few seconds. If it becomes **Project unavailable**, use **Retry connection** once.
 - If the status dot says WebMCP is unavailable, confirm that the browser has WebMCP enabled, then reload the page.
 - A `REVISION_CONFLICT` is safe behavior, not lost work. Ask the agent to read the current project context and retry once with the new revision.

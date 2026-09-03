@@ -5,7 +5,7 @@ Target length: **95–115 seconds**. Hard ceiling: **under 3 minutes**. Record o
 ## Before recording
 
 - Use the final public deployment in a WebMCP-capable browser.
-- Authenticate before recording, then reset the demo.
+- Before recording, use the in-page Praxis sign-in form with the private judge credential. Wait for the redirect and project hydration, then reset the demo.
 - Confirm **Synced to control plane** and **WebMCP · 6 bounded tools**.
 - Put the browser at a readable zoom and select the first scene.
 - Have the agent prompt ready to paste.

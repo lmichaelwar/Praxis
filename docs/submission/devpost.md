@@ -16,6 +16,8 @@ Codex does video—without taking the cut away from the director.
 - Public demo video: `{{VIDEO_URL}}`
 - Source repository: <https://github.com/lmichaelwar/Praxis>
 
+Judges enter the username and password from Devpost's private testing instructions on the Praxis sign-in page. Successful sign-in redirects to the hydrated Studio; no credential is published in the repository.
+
 ## Short description
 
 Praxis is a cooperative video-production studio where a director and a browser agent work on one live, revisioned project. WebMCP gives the agent semantic tools to understand the open cut and make bounded changes; the director keeps visible control through locks, checkpoints, history, budgets, and the final decision.
