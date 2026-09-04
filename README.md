@@ -5,6 +5,7 @@
 Praxis is a cooperative video-production studio where a person and a browser agent work on the same revisioned project. The director keeps the visible timeline, locks, checkpoints, budget, and final say; WebMCP gives the agent semantic tools for reading context and proposing or applying bounded changes.
 
 - Live demo: <https://praxis-no-api-demo.hofwar.workers.dev>
+- Record and submit: [HACKATHON_DEMO.md](HACKATHON_DEMO.md) — short narration, exact agent prompt, and recording checklist.
 - Judge walkthrough: [docs/submission/testing-instructions.md](docs/submission/testing-instructions.md)
 
 The hosted demo opens on a simple Praxis sign-in page. Judges enter the demo-only username and password supplied privately in Devpost; a successful sign-in creates a secure, HttpOnly session cookie and redirects into the Studio. HTTP Basic remains available for compatible automation. No credential belongs in this repository.

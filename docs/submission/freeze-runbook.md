@@ -36,7 +36,7 @@ Do not continue work on a branch in the submitted repository. Put post-submissio
 - Monitor availability without changing the judged artifact.
 - Keep the demo credential valid and keep the hosting account, domain, storage, and video online.
 - Store monitoring evidence outside the submitted repository.
-- If availability fails, prefer restoring the exact frozen artifact and configuration. Do not add features, change behavior, or rewrite content. Record the incident and exact recovery action; contact the organizer before any non-identical intervention when possible.
+- If availability fails, do not redeploy, migrate, or edit the judged release during the freeze. Record the incident and contact the human and organizer before an intervention. Only an already-implemented, authorized fail-closed control may be used without changing the release; its existence must not be assumed. The current authority does not permit routine recovery redeployments during judging.
 - Never rotate a judge credential without updating the private testing instructions through an organizer-approved path.
 
 ## After judging
